@@ -1,4 +1,4 @@
-//purpose : This is the main file it containts Create Ticket,Get Ticket use cases and bot builder connection.
+//purpose : This is the main file it containts code to handle Create Ticket,Get Ticket Use Cases and bot builder connection.
 
 const Request = require('request');
 var getsession='';
