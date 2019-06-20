@@ -267,6 +267,7 @@ function getTicketIDCreateTicket(session) {
         console.log("request id execute method",requestid);
           if(requestid)
           {
+            getsession.send("Okay got it. Please wait for a moment while I complete your request...");
               EndpointCreateTicketResponse(getsession,function(data)
               {
                   console.log("endpoint data",data);
@@ -342,6 +343,7 @@ function getTicketDetailsByID(session) {
         console.log("request id execute method",requestid);
           if(requestid)
           {
+            session.send("Okay got it. Please wait for a moment while I complete your request...");
             EndpointGetTicketByPerticularIDResponse(session,function(data)
             {
               var testmessage='';
@@ -429,6 +431,7 @@ function getOpenTicketDetails(session) {
         console.log("request id execute method open ticket",requestid);
           if(requestid)
           {
+             session.send("Okay got it. Please wait for a moment while I complete your request...");
             EndpointGetTicketResponse(session,function(data)
             {
                 var finalmessage='';
@@ -508,7 +511,7 @@ function getOpenTicketDetails(session) {
 //purpose:endpoint for create ticket
 function EndpointCreateTicketResponse(getsession,callback)
 {
-  getsession.send("Okay got it. Please wait for a moment while I complete your request...");
+ 
 try{
       app.post('/api/AE/createTicket', (request, response) => {    
       //response.text = request.body.conversation_details.PublicId;                
@@ -535,7 +538,7 @@ try{
 ///purpose:endpoint for get details of perticular ticket
 function EndpointGetTicketByPerticularIDResponse(getsession,callback)
 {
-  getsession.send("Okay got it. Please wait for a moment while I complete your request...");
+ 
 try{
 app.post('/api/AE/getTicketByPerticularID', (request, response) => {    
   //response.text = request.body.conversation_details.PublicId;                
@@ -562,7 +565,7 @@ app.post('/api/AE/getTicketByPerticularID', (request, response) => {
 ///purpose:endpoint for get list of all open ticket
 function EndpointGetTicketResponse(getsession,callback)
 {
-  getsession.send("<b><i>Okay got it. Please wait for a moment while I complete your request...</b></i>");
+ 
 try{
 app.post('/api/AE/getTicket', (request, response) => {    
   //response.text = request.body.conversation_details.PublicId;                
