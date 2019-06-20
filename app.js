@@ -83,7 +83,7 @@ var recognizer = new builder.LuisRecognizer(LuisModelUrl).onEnabled(function (co
 bot.recognizer(recognizer);
 
 
-//Greeting Dialog
+//Greeting Dialog to greet the user
 bot.dialog('Greeting',[
     function (session, args, next) {    
     
