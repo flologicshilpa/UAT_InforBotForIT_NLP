@@ -22,7 +22,7 @@ module.exports = {
                         url: process.env.AEbaseUrl+'authenticate' ,
                         method: 'POST',
                         headers: headers,
-                        form: { 'username': 'aaAlex', 'password': 'Robot@123' }
+                        form: { 'username': 'Alex', 'password': 'Robot@123' }
                         }//end option
 
                     // Start the request
