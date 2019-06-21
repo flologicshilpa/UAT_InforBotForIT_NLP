@@ -1,6 +1,7 @@
 // purpose : AE(Automation Edge) Services this js file required for Authenticate and Execute AE workflow.
 
-
+const Cryptr = require('cryptr');
+const cryptr = new Cryptr('70 108 111 108 111 103 105 99 64 49 50 51');
 var fs = require("fs");
 const Request = require('request'); //Request module is required for request Post and Get method in node js.
 var logger = require("./logger").Logger; //Logger file required for maintain error logs.
@@ -11,6 +12,10 @@ module.exports = {
             AuthenticateToAE:function (getsession,callback) {                
                 try
                 {
+                    
+                    const decryptedUserName = cryptr.decrypt(process.env.AEUserName);
+                    const decryptedPassword = cryptr.decrypt(process.env.AEPassword);
+                            
                     var temp = '';
                     //Set the headers
                     var headers = {
@@ -22,7 +27,7 @@ module.exports = {
                         url: process.env.AEbaseUrl+'authenticate' ,
                         method: 'POST',
                         headers: headers,
-                        form: { 'username': 'Alex', 'password': 'Robot@123' }
+                        form: { 'username': decryptedUserName, 'password': decryptedPassword }
                         }//end option
 
                     // Start the request
