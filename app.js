@@ -86,22 +86,31 @@ bot.recognizer(recognizer);
 //Greeting Dialog to greet the user
 bot.dialog('Greeting',[
     function (session, args, next) {    
-    
-
-      var jsonData = JSON.stringify(session.message);
+    var jsonData = JSON.stringify(session.message);
       var jsonParse = JSON.parse(jsonData);
       console.log(jsonParse.localTimestamp);
-        var gettime=
-
-      session.conversationData.userName=jsonParse.address.user.name;
-      var welcomeMessage ="Hello "+session.conversationData.userName +" I'm the Infor IT bot! Your friendly virtual assistant! <p> You can say things like  <b><i>create a ticket</i></b> or <b><i>report an issue</i></b> to report an issue. You can also get a list of your open tickets by saying  <b><i>get my tickets</i></b> </p>"
-      + "<p> If you need help with FAQ's or Knowledge Articles you can also say things like  <b><i>How to install MS Office? </i></b> or <b><i>Help on Windows 8 installation</i></b> </p>"
-      + " <p> Let's get started; How can I help you today? </p> ";
-
-       session.send( welcomeMessage);
-       
-              
-       session.endDialog();
+      if(process.env.Luis_Service_enabled=="no" && process.env.Qna_Service_enabled=="no")
+      {
+        session.send(process.env.System_down_Message)
+        session.endDialog();
+      }
+      else
+      {
+          if(process.env.Luis_Service_enabled=="no")
+          {
+            session.send(process.env.Luis_ServiceDown_Message); 
+          }
+          else
+          {
+            session.send(process.env.QNA_ServiceDown_Message); 
+          }
+            session.conversationData.userName=jsonParse.address.user.name;
+            var welcomeMessage ="Hello "+session.conversationData.userName +" I'm the Infor IT bot! Your friendly virtual assistant! <p> You can say things like  <b><i>create a ticket</i></b> or <b><i>report an issue</i></b> to report an issue. You can also get a list of your open tickets by saying  <b><i>get my tickets</i></b> </p>"
+            + "<p> If you need help with FAQ's or Knowledge Articles you can also say things like  <b><i>How to install MS Office? </i></b> or <b><i>Help on Windows 8 installation</i></b> </p>"
+            + " <p> Let's get started; How can I help you today? </p> ";      
+            session.send( welcomeMessage);           
+            session.endDialog();
+      }
     }
 ]).triggerAction({
     matches: 'Intent_Greeting'
@@ -143,7 +152,15 @@ bot.dialog('None',[
 //create ticket Dialog
 bot.dialog('CreateTicketDialog',[
     function (session, args, next) { 
-         builder.Prompts.text(session, "Great! you want to report an issue. Let's get started. <p> Enter a short title/description for your ticket </p>");              
+         if(process.env.Luis_Service_enabled=="no")
+            {
+                session.send(process.env.Luis_ServiceDown_Message);
+                session.endDialog();
+            }
+            else
+            {
+            builder.Prompts.text(session, "Great! you want to report an issue. Let's get started. <p> Enter a short title/description for your ticket </p>");              
+            }
         },
         function (session, results) {
             session.conversationData.shortdescription =  results.response;
@@ -211,16 +228,19 @@ bot.dialog('askQuestionAgain',[
 bot.dialog('GetTicketDialog',[
     function (session, args, next) { 
         var gettiketentity,intent;
-        intent = args.intent;
-        var entitylist= args.intent.entities;
-      console.log("List of entity",JSON.stringify(entitylist));
-      console.log("List of args................",args);
-      console.log("send text.............",session.message.text);
-   //  var gettiketentity1 = builder.EntityRecognizer.findEntity(intent.entities,'builtin.number');
-       //console.log("before tirm4444444444444444444444444444444444",gettiketentity1);
-        gettiketentity = builder.EntityRecognizer.findEntity(intent.entities,'builtin.number');
+         if(process.env.Luis_Service_enabled=="no")
+        {
+            session.send(process.env.Luis_ServiceDown_Message);
+            session.endDialog();
+        }
+        else
+        {
+          intent = args.intent;
+          var entitylist= args.intent.entities;
+     
+          gettiketentity = builder.EntityRecognizer.findEntity(intent.entities,'builtin.number');
         
-         //console.log("after tirm4444444444444444444444444444444444",gettiketentity);
+        
         
         //session data 
                 var jsonData = JSON.stringify(session.message);
@@ -252,8 +272,8 @@ bot.dialog('GetTicketDialog',[
         {        
             getOpenTicketDetails(session);
         }
-         
-        }//end function
+     }//end service
+  }//end function
            
 ]).triggerAction({
     matches: 'Intent_GetTickets'
@@ -596,6 +616,14 @@ app.post('/api/AE/getTicket', (request, response) => {
 //FAQ 
 bot.dialog('KnowledgeArticle',[
     function (session, args, next) { 
+      if(process.env.Qna_Service_enabled=="no")
+      {
+          session.send(process.env.QNA_ServiceDown_Message);
+          session.endDialog();
+      }
+      else
+      {
+      
         var qnaMakerResult;
        
         var intent = args.intent;
@@ -685,8 +713,8 @@ bot.dialog('KnowledgeArticle',[
                 session.endDialog();
                 }
         }
-       
-        }, 
+      } 
+     }, 
         function (session, results) {          
             var str=results.response.entity;
              if(results.response.entity)
