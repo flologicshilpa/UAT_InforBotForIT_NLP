@@ -41,8 +41,7 @@ var app = express()
 });
 
 //memory 
-  var inMemoryStorage = new builder.MemoryBotStorage();
- 
+  var inMemoryStorage = new builder.MemoryBotStorage(); 
 
  // respond to bot messages
  app.post('/api/messages', connector.listen());
@@ -52,12 +51,10 @@ var app = express()
    console.log('Listening on %s', port);
  });
 
-const logUserConversation = (event) => {
-    console.log('message: ' + event.text + ', user: ' + event.address.user.name);
+const logUserConversation = (event) => {  
     var text1=event.text;
     var text2=text1.replace("&#160;"," ");
-     event.text=text2.replace(/&#160;/g, '');
-    console.log(event.text);
+     event.text=text2.replace(/&#160;/g, '');   
 };
 
 // Middleware for logging
@@ -91,25 +88,26 @@ bot.dialog('Greeting',[
       console.log(jsonParse.localTimestamp);
       if(process.env.Luis_Service_enabled=="no" && process.env.Qna_Service_enabled=="no")
       {
-        session.send(process.env.System_down_Message)
+        session.send(process.env.System_down_Message);
         session.endDialog();
       }
       else
       {
           if(process.env.Luis_Service_enabled=="no")
           {
-            session.send(process.env.Luis_ServiceDown_Message); 
+            session.send(process.env.Luis_ServiceDown_Message);            
           }
-          else
+          else if(process.env.Qna_Service_enabled=="no")
           {
             session.send(process.env.QNA_ServiceDown_Message); 
           }
-            session.conversationData.userName=jsonParse.address.user.name;
-            var welcomeMessage ="Hello "+session.conversationData.userName +" I'm the Infor IT bot! Your friendly virtual assistant! <p> You can say things like  <b><i>create a ticket</i></b> or <b><i>report an issue</i></b> to report an issue. You can also get a list of your open tickets by saying  <b><i>get my tickets</i></b> </p>"
-            + "<p> If you need help with FAQ's or Knowledge Articles you can also say things like  <b><i>How to install MS Office? </i></b> or <b><i>Help on Windows 8 installation</i></b> </p>"
-            + " <p> Let's get started; How can I help you today? </p> ";      
-            session.send( welcomeMessage);           
-            session.endDialog();
+           session.conversationData.userName=jsonParse.address.user.name;
+           var welcomeMessage ="Hello "+session.conversationData.userName +" I'm the Infor IT bot! Your friendly virtual assistant! <p> You can say things like  <b><i>create a ticket</i></b> or <b><i>report an issue</i></b> to report an issue. You can also get a list of your open tickets by saying  <b><i>get my tickets</i></b> </p>"
+           + "<p> If you need help with FAQ's or Knowledge Articles you can also say things like  <b><i>How to install MS Office? </i></b> or <b><i>Help on Windows 8 installation</i></b> </p>"
+           + " <p> Let's get started; How can I help you today? </p> "
+           + " <p><i> Note: As of now I can provide answers to requests and questions only in English language.</i></p> ";      
+           session.send(welcomeMessage);           
+           session.endDialog();
       }
     }
 ]).triggerAction({
@@ -176,7 +174,7 @@ bot.dialog('CreateTicketDialog',[
         },
         function(session,results)
         {
-            console.log(results.response);
+           // console.log(results.response);
             if(results.response==true)
             {
             var jsonData = JSON.stringify(session.message);
@@ -259,14 +257,9 @@ bot.dialog('GetTicketDialog',[
 
         if(gettiketentity)
         {
-            var ticketnumber= gettiketentity.entity;
-           console.log("Entity name o.....................",gettiketentity.entity[0]);
-           console.log("Entity name 1.....................",gettiketentity.entity[1]);
-            console.log("Entity.....................",ticketnumber);
-            session.conversationData.TicketID=ticketnumber
-           // console.log("ticket id",session.conversationData.TicketID);
-            getTicketDetailsByID(session);
-            
+            var ticketnumber= gettiketentity.entity;          
+            session.conversationData.TicketID=ticketnumber;          
+            getTicketDetailsByID(session);            
         }
         else
         {        
@@ -283,26 +276,16 @@ bot.dialog('GetTicketDialog',[
 //purpose : this function use for get executed method request id 
 //and send message to user for create ticket   
 function getTicketIDCreateTicket(session) {   
-    aeservice.ExecuteMethodForCreateTicket(getsession,function (requestid) {   
-        console.log("request id execute method",requestid);
+    aeservice.ExecuteMethodForCreateTicket(getsession,function (requestid) {         
           if(requestid)
           {
             getsession.send("Okay got it. Please wait for a moment while I complete your request...");
               EndpointCreateTicketResponse(getsession,function(data)
               {
-                  console.log("endpoint data",data);
+                 
                   if(data)
                   {
-                      // ticketid=TicketID
-                      // console.log("workflow end",ticketid);
-
-                      msbotservice.AuthenticateWithMSBot(getsession,function (tokendata) {
-                        
-                        //changes--------------------------------------------------------------
-                                              
-              
-                        
-                //end changes
+                      msbotservice.AuthenticateWithMSBot(getsession,function (tokendata) {                     
                           var requestData = {
                               "type": "message",
                               "from": {
@@ -359,15 +342,13 @@ function getTicketIDCreateTicket(session) {
 //purpose : this function use for get executed method request id 
 //and get details of perticular ticket and send it to user.  
 function getTicketDetailsByID(session) {   
-    aeservice.ExecuteMethodForGetTicketByID(session,function (requestid) {   
-        console.log("request id execute method",requestid);
+    aeservice.ExecuteMethodForGetTicketByID(session,function (requestid) { 
           if(requestid)
           {
             session.send("Okay got it. Please wait for a moment while I complete your request...");
             EndpointGetTicketByPerticularIDResponse(session,function(data)
             {
-              var testmessage='';
-                  console.log("endpoint88888 data",data);
+              var testmessage='';                  
                   if(data.success=='false')
                   {             
                     testmessage=data.error_details;
@@ -386,8 +367,8 @@ function getTicketDetailsByID(session) {
                                     + "\n * Support Staff Name : "+ data.details.ticket.support_staff_name 
                                     + "\n * Support Staff Group : "+ data.details.ticket.support_staff_group  
                                     + "\n * Hello "+ data.conversation_details.user_name +", please click on <a href= " + data.details.ticket.Latest_update + "> View More Details </a> to get more information";
-                                         
-                                console.log(testmessage);               
+                                        
+                             
                 }
                 msbotservice.AuthenticateWithMSBot(getsession,function (tokendata) {
                                     var requestData = {
@@ -448,7 +429,7 @@ function getTicketDetailsByID(session) {
 
 function getOpenTicketDetails(session) {   
     aeservice.ExecuteMethodForGetOpenTicketDetails(session,function (requestid) {   
-        console.log("request id execute method open ticket",requestid);
+       
           if(requestid)
           {
              session.send("Okay got it. Please wait for a moment while I complete your request...");
@@ -467,7 +448,7 @@ function getOpenTicketDetails(session) {
                   
                   stringyfydata=JSON.stringify(data.details.tickets);
                   getdata=JSON.parse(stringyfydata);  
-                  console.log("Stringyfydata",stringyfydata);
+              
                    for(i=0;i<getdata.length;i++)
                     {
                        var testmessage = " <b>Ticket Id : </b>"+ getdata[i].id                           
@@ -538,7 +519,7 @@ try{
           if(request.body)
           {
               response.sendStatus(200);
-              console.log(request.body);
+           
               logger.info("Response send from AE to Chatbot with ticket id ::"+JSON.stringify(request.body),getsession.conversationData.userName);
               return callback(request.body);
           }
@@ -566,7 +547,7 @@ app.post('/api/AE/getTicketByPerticularID', (request, response) => {
           {
               response.sendStatus(200);
                logger.info("Response send from AE to Chatbot For particular ticket ::"+ JSON.stringify(request.body),getsession.conversationData.userName);
-              console.log(request.body);
+            
               return callback(request.body);
           }
           else
@@ -593,7 +574,7 @@ app.post('/api/AE/getTicket', (request, response) => {
           {
               response.sendStatus(200);
             logger.info("Response send from AE to Chatbot For allopen ticket ::"+ JSON.stringify(request.body),getsession.conversationData.userName);
-              console.log(request.body);
+           
               return callback(request.body);
           }
           else
@@ -628,8 +609,7 @@ bot.dialog('KnowledgeArticle',[
        
         var intent = args.intent;
         var title = builder.EntityRecognizer.findEntity(intent.entities,'faq_topic');
-        console.log("Intent........",intent);
-        console.log("title........",intent.entities);
+      
         const question = session.message.text; 
         if(question.toLowerCase()=="/exit" || question.toLowerCase()=="/home" || question.toLowerCase()=="i am done")
         {
@@ -664,7 +644,7 @@ bot.dialog('KnowledgeArticle',[
                                         }
                                     });
 
-                            console.log(questionOptions);
+                            
                             if(questionOptions.length == 1)
                             {
 
