@@ -103,7 +103,6 @@ bot.dialog('Greeting',[
           }
            session.conversationData.userName=jsonParse.address.user.name;
            var welcomeMessage ="Hello "+session.conversationData.userName +" I'm the Infor IT bot! Your friendly virtual assistant! <p> You can say things like  <b><i>create a ticket</i></b> or <b><i>report an issue</i></b> to report an issue. You can also get a list of your open tickets by saying  <b><i>get my tickets</i></b> </p>"
-           + "<p> If you need help with FAQ's or Knowledge Articles you can also say things like  <b><i>How to install MS Office? </i></b> or <b><i>Help on Windows 8 installation</i></b> </p>"
            + " <p> Let's get started; How can I help you today? </p> "
            + " <p><i> Note: As of now I can provide answers to requests and questions only in English language.</i></p> ";      
            session.send(welcomeMessage);           
