@@ -60,7 +60,7 @@ module.exports = {
 
                         var requestData =
                         {
-                            "orgCode": "INFOR_UAT",
+                            "orgCode": "INFOR_PROD",
                             "workflowName": "Create Ticket",
                             "sourceId": null,
                             "params": [
@@ -153,7 +153,7 @@ module.exports = {
                     var requestid = '';
                         var requestData =
                         {
-                            "orgCode": "INFOR_UAT",
+                            "orgCode": "INFOR_PROD",
                             "workflowName": "Get Ticket Details",
                             "sourceId": null,
                             "params": [
@@ -240,7 +240,7 @@ module.exports = {
                     var requestid = '';
                         var requestData =
                         {
-                            "orgCode":"INFOR_UAT",
+                            "orgCode":"INFOR_PROD",
                             "workflowName":"List Tickets",
                             "sourceId":null,
                             "params": [
