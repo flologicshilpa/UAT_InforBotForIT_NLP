@@ -1,15 +1,17 @@
 //purpose : This is the main file it containts code to handle Create Ticket,Get Ticket Use Cases and bot builder connection.
-
+const utf8 = require('utf8');
 const Request = require('request');
 var getsession='';
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
+
 dotenv.config();
   // Here we import our Logger file and instantiate a logger object
   var logger = require("./Services/logger").Logger;
   var aeservice = require("./Services/aeService");
   var msbotservice=require("./Services/msBotService");
+  var messageFormating = require("./MessageFormat/MessageFormating").MessageFormat;
 
 
 var express = require('express')
@@ -83,9 +85,8 @@ bot.recognizer(recognizer);
 //Greeting Dialog to greet the user
 bot.dialog('Greeting',[
     function (session, args, next) {    
-    var jsonData = JSON.stringify(session.message);
-      var jsonParse = JSON.parse(jsonData);
-      console.log(jsonParse.localTimestamp);
+       
+      //console.log(jsonParse.localTimestamp);
       if(process.env.Luis_Service_enabled=="no" && process.env.Qna_Service_enabled=="no")
       {
         session.send(process.env.System_down_Message);
@@ -101,12 +102,7 @@ bot.dialog('Greeting',[
           {
             session.send(process.env.QNA_ServiceDown_Message); 
           }
-           session.conversationData.userName=jsonParse.address.user.name;
-           var welcomeMessage ="Hello "+session.conversationData.userName +" I'm the Infor IT bot! Your friendly virtual assistant! <p> You can say things like  <b><i>create a ticket</i></b> or <b><i>report an issue</i></b> to report an issue. You can also get a list of your open tickets by saying  <b><i>get my tickets</i></b> </p>"
-           + "<p> If you need help with FAQ's or Knowledge Articles you can also say things like  <b><i>How to install MS Office? </i></b> or <b><i>Help on Windows 8 installation</i></b> </p>"
-           + " <p> Let's get started; How can I help you today? </p> "
-           + " <p><i> Note: As of now I can provide answers to requests and questions only in English language.</i></p> ";      
-           session.send(welcomeMessage);           
+           messageFormating.WelcomeMessage(session)
            session.endDialog();
       }
     }
@@ -157,7 +153,7 @@ bot.dialog('CreateTicketDialog',[
             }
             else
             {
-            builder.Prompts.text(session, "Great! you want to report an issue. Let's get started. <p> Enter a short title/description for your ticket </p>");              
+            builder.Prompts.text(session, "Great! you want to report an issue. Let's get started.Enter a short title/description for your ticket.");              
             }
         },
         function (session, results) {
@@ -177,15 +173,16 @@ bot.dialog('CreateTicketDialog',[
            // console.log(results.response);
             if(results.response==true)
             {
-            var jsonData = JSON.stringify(session.message);
+                var jsonData = JSON.stringify(session.message);
                 var jsonParse = JSON.parse(jsonData);
+                session.conversationData.channelName=jsonParse.address.channelId;
                 session.conversationData.botID=jsonParse.address.bot.id;
                 session.conversationData.botName=jsonParse.address.bot.name;
                 session.conversationData.userID=jsonParse.address.user.id;
                 session.conversationData.userName=jsonParse.address.user.name;
                 session.conversationData.conversationID=jsonParse.address.conversation.id;
                 session.conversationData.channelid=jsonParse.address.id;
-                session.conversationData.channelName=jsonParse.address.channelId;
+               
                 session.conversationData.serviceurl=jsonParse.address.serviceUrl;
                session.conversationData.conjsonid=jsonParse.address.id;
              //  session.send('serviceurl:%s',JSON.stringify(jsonParse.address));
@@ -234,12 +231,9 @@ bot.dialog('GetTicketDialog',[
         else
         {
           intent = args.intent;
-          var entitylist= args.intent.entities;
-     
+          var entitylist= args.intent.entities;     
           gettiketentity = builder.EntityRecognizer.findEntity(intent.entities,'builtin.number');
-        
-        
-        
+              
         //session data 
                 var jsonData = JSON.stringify(session.message);
                 var jsonParse = JSON.parse(jsonData);
@@ -279,12 +273,13 @@ function getTicketIDCreateTicket(session) {
     aeservice.ExecuteMethodForCreateTicket(getsession,function (requestid) {         
           if(requestid)
           {
-            getsession.send("Okay got it. Please wait for a moment while I complete your request...");
+            getsession.send("Okay got it. Please wait for a moment while I complete your request...");           
               EndpointCreateTicketResponse(getsession,function(data)
               {
                  
                   if(data)
                   {
+                      var sendmessage = messageFormating.TicketCreatedMessage(getsession,data.conversation_details.user_name,data.ticket.id);
                       msbotservice.AuthenticateWithMSBot(getsession,function (tokendata) {                     
                           var requestData = {
                               "type": "message",
@@ -299,9 +294,7 @@ function getTicketIDCreateTicket(session) {
                                   "id": data.conversation_details.user_id,
                                   "name":data.conversation_details.user_name
                               },
-//                               "text":"Hey "+ data.conversation_details.user_name +", your Ticket has been created!!! Please refer to Ticket ID : " + data.details.ticket.id +", for more details." ,
-//                               "replyToId": "3236fa10-4b88-11e9-9a61-233bf450fb8d"
-                              "text":"Hey "+ data.conversation_details.user_name +", your Ticket has been created! <p> Please note down your ticket #: <b>" + data.details.ticket.id +"</b>.Please provide the ticket number in future if you need to find status of your ticket.</p><p> You can ask things like <b>details of nnnn </b> where nnnn is your ticket #.</p>" ,
+                              "text": sendmessage ,
                               "replyToId": "3236fa10-4b88-11e9-9a61-233bf450fb8d"
                            }
                           
@@ -348,28 +341,15 @@ function getTicketDetailsByID(session) {
             session.send("Okay got it. Please wait for a moment while I complete your request...");
             EndpointGetTicketByPerticularIDResponse(session,function(data)
             {
-              var testmessage='';                  
+              var sendmessage='';                  
                   if(data.success=='false')
                   {             
                     testmessage=data.error_details;
                   }
                  else
-                 {
-                      var msg = new builder.Message(session)
-                        .speak('This is the text that will be spoken.')
-                        .inputHint(builder.InputHint.acceptingInput);
-                    session.send(msg);
-                   //testmessage="hi";
-                 testmessage= "\n\n * Ticket Id : "+ data.details.ticket.id
-                                    + "\n * Creation Date :  "+ data.details.ticket.creation_date 
-                                    + "\n * Title : "+ data.details.ticket.title 
-                                    + "\n * Status : " + data.details.ticket.status
-                                    + "\n * Support Staff Name : "+ data.details.ticket.support_staff_name 
-                                    + "\n * Support Staff Group : "+ data.details.ticket.support_staff_group  
-                                    + "\n * Hello "+ data.conversation_details.user_name +", please click on <a href= " + data.details.ticket.Latest_update + "> View More Details </a> to get more information";
-                                        
-                             
-                }
+                 {                   
+                    sendmessage = messageFormating.DetailsofPerticularticketMsg(session,data);                                    
+                 }
                 msbotservice.AuthenticateWithMSBot(getsession,function (tokendata) {
                                     var requestData = {
                                         "type": "message",
@@ -384,7 +364,7 @@ function getTicketDetailsByID(session) {
                                             "id": data.conversation_details.user_id,
                                             "name":data.conversation_details.user_name
                                         },
-                                        "text": testmessage,
+                                        "text": sendmessage,
                                         "replyToId": "3236fa10-4b88-11e9-9a61-233bf450fb8d"
                                      }
                                     
@@ -428,35 +408,24 @@ function getTicketDetailsByID(session) {
 //and get the list of all open ticket for authenticate user and send it to user.  
 
 function getOpenTicketDetails(session) {   
-    aeservice.ExecuteMethodForGetOpenTicketDetails(session,function (requestid) {   
-       
+    aeservice.ExecuteMethodForGetOpenTicketDetails(session,function (requestid) {          
           if(requestid)
           {
              session.send("Okay got it. Please wait for a moment while I complete your request...");
             EndpointGetTicketResponse(session,function(data)
             {
-                var finalmessage='';
-              var stringyfydata='';
-              var getdata='';
-              var i;              
+                 var sendmessage='';
+                
                 if(data.success=='false')
                 {    
-                    finalmessage=data.error_details;
+                    sendmessage=data.error_details;
                 }
                 else
                 {
-                  
-                  stringyfydata=JSON.stringify(data.details.tickets);
-                  getdata=JSON.parse(stringyfydata);  
-              
-                   for(i=0;i<getdata.length;i++)
-                    {
-                       var testmessage = " <b>Ticket Id : </b>"+ getdata[i].id                           
-                                         + "<ul><li>  Status : "+ getdata[i].status +"</li>"  
-                                         + "<li>  Title  : "+ getdata[i].title + "</li></ul>";        
-                                         finalmessage = finalmessage +"\n " + testmessage +"<p> </p> ";
-                    }
-                }                                
+                    sendmessage=messageFormating.DetailsofAllopenTicketMsg(session,data);
+                 
+                }                    
+               
                 msbotservice.AuthenticateWithMSBot(session,function (tokendata) {
                 var requestData = {
                                         "type": "message",
@@ -471,7 +440,7 @@ function getOpenTicketDetails(session) {
                                             "id": data.conversation_details.user_id,
                                             "name":data.conversation_details.user_name
                                         },
-                                        "text": finalmessage,
+                                        "text": sendmessage,
                                         "replyToId": "3236fa10-4b88-11e9-9a61-233bf450fb8d"
                                   }
                                     
@@ -506,8 +475,6 @@ function getOpenTicketDetails(session) {
   });//end of execute method of AE WorkFlow
  session.endDialog();
 }
-
-
 
 //purpose:endpoint for create ticket
 function EndpointCreateTicketResponse(getsession,callback)
@@ -565,38 +532,39 @@ app.post('/api/AE/getTicketByPerticularID', (request, response) => {
 
 ///purpose:endpoint for get list of all open ticket
 function EndpointGetTicketResponse(getsession,callback)
-{
- 
-try{
-app.post('/api/AE/getTicket', (request, response) => {    
-  //response.text = request.body.conversation_details.PublicId;                
-          if(request.body)
-          {
-              response.sendStatus(200);
-            logger.info("Response send from AE to Chatbot For allopen ticket ::"+ JSON.stringify(request.body),getsession.conversationData.userName);
-           
-              return callback(request.body);
-          }
-          else
-          {
-              logger.info("Error occured when call getticket endpoint with error code:"+response.statusCode,getsession.conversationData.userName);
-          }
-     
-    });
-  }
-  catch(e)
-  {
-      logger.info("Endpoint exception:",getsession.conversationData.userName);
-  }
+{  
+    try{
+    app.post('/api/AE/getTicket', (request, response) => {    
+    //response.text = request.body.conversation_details.PublicId;                
+            if(request.body)
+            {
+                response.sendStatus(200);
+                logger.info("Response send from AE to Chatbot For allopen ticket ::"+ JSON.stringify(request.body),getsession.conversationData.userName);
+            
+                return callback(request.body);
+            }
+            else
+            {
+                logger.info("Error occured when call getticket endpoint with error code:"+response.statusCode,getsession.conversationData.userName);
+            }
+        
+        });
+    }
+    catch(e)
+    {
+        logger.info("Endpoint exception:",getsession.conversationData.userName);
+    }
 }
 
 //Knowladge Article
-
-
-
 //FAQ 
 bot.dialog('KnowledgeArticle',[
     function (session, args, next) { 
+
+        var jsonData = JSON.stringify(session.message);
+        var jsonParse = JSON.parse(jsonData);
+        session.conversationData.channelName=jsonParse.address.channelId;
+
       if(process.env.Qna_Service_enabled=="no")
       {
           session.send(process.env.QNA_ServiceDown_Message);
@@ -643,38 +611,41 @@ bot.dialog('KnowledgeArticle',[
                                             questionOptions.push(qna.questions[0]);
                                         }
                                     });
-
                             
                             if(questionOptions.length == 1)
-                            {
-
-                                session.dialogData.qnaMakerResult = qnaMakerResult = response;                
-                                var ans=response.answers[0].answer;                       
-                                
-                                    // Create an instance of the turndown service
-                                    //let turndownService = new TurndownService();                        
-                                // let markdown = turndownService.turndown(ans);
-                                    session.send(ans);                     
-                                    session.endDialog();
+                            {       
+                                session.dialogData.qnaMakerResult = qnaMakerResult = response; 
+                                var sendAnswer = messageFormating.FAQAnswerMsg(session,response);
+                                session.send(sendAnswer);                            
+                                session.endDialog();
                             }
                             else if(questionOptions.length > 1)
-                            {
-                                var questionOptionsList = [];
-                                qnaMakerResult.answers.forEach(function (qna) {
-                                    if (qna.score > 50) {
-                                        questionOptionsList.push(qna.questions[0]);
+                            {                                                    
+                                if(session.conversationData.channelName=="skypeforbusiness")
+                                {
+                                        var questionOptionsList = [];
+                                        qnaMakerResult.answers.forEach(function (qna) {
+                                            if (qna.score > 50) {
+                                                questionOptionsList.push(qna.questions[0]);
+                                            }
+                                        });
+                                        session.send("Multiple question returned for related topic.");
+                                        builder.Prompts.choice(session, "Select/Type a topic number of your interest.",questionOptionsList,{listStyle:2});                     
+                                }//end of if
+                               else{
+                                        var MultiplequestionMessage = new builder.Message(session)
+                                        var attachments = [];                            
+                                        MultiplequestionMessage.attachmentLayout(builder.AttachmentLayout.carousel);
+                                        var attachments=getCardsAttachmentsForFAQ(qnaMakerResult.answers);
+                                        MultiplequestionMessage.attachments(attachments);
+                                        session.send(MultiplequestionMessage);
+                                        session.endDialog();
                                     }
-                                });   
-
-                                session.send("Multiple question returned for related topic.");
-                                builder.Prompts.choice(session, "Select/Type a topic number of your interest.",questionOptionsList,{listStyle:2});                     
-                            
                             }
                             else
                             {                       
                                     session.send("Hmmm, I didn't get that. Maybe rephrase your query and try again");
-                                    session.endDialog();
-                            
+                                    session.endDialog();                            
                             }
                         }
                         else {
@@ -741,3 +712,86 @@ bot.dialog('KnowledgeArticle',[
 ]).triggerAction({
     matches: 'FAQ'
 });
+
+
+function getCardsAttachmentsForFAQ(data)
+{
+    var attachments=[];
+    var i;
+    for(i=0;i<data.length;i++)
+    {
+        var valueofmetadata=data[i].metadata;
+        if(valueofmetadata.length>=1)
+        {
+            var ans="https:"+ valueofmetadata[0].value;   
+
+        }
+        else{
+            var ans="";
+        }
+        var card = {
+            'contentType': 'application/vnd.microsoft.card.adaptive',
+            'content': {
+                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                "type": "AdaptiveCard",
+                "version": "1.0",
+                "body": [                    
+                    {
+                        "type": "Container",
+                        "items": [
+                            {
+                                "type": "ColumnSet",
+                                "columns": [
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "TextBlock",
+                                                "size": "Medium",
+                                                "weight": "Bolder",
+                                                "text": "Question: ",
+                                                "wrap": true
+                                            },                                               
+                                        ],
+                                        "width": 2
+                                     },
+                                    {
+                                        "type": "Column",
+                                        "items": [
+                                            {
+                                                "type": "TextBlock",
+                                                "size": "Medium",
+                                                "weight": "Bolder",
+                                                "text": data[i].questions[0],
+                                                "wrap": true
+                                            }
+                                        ],
+                                        "width": 8
+                                    },
+
+                                ] }
+                            ]
+                    },
+                            
+                ]//body close
+            ,
+            "actions": [
+                {
+                  "type": "Action.OpenUrl",
+                  "title": "View Details",
+                  "url": ans
+                }
+              ]   
+            
+            
+            }//content
+            };
+        attachments.push(card); 
+    }
+    return attachments;
+}
+                                     
+
+        // console.log("Question:::::::" ,data[i].questions[0]);
+        // console.log(" Answer:::::::: ","[View Details]"+ ans);
+   
