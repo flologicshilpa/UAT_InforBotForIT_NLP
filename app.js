@@ -1,7 +1,7 @@
 //purpose : This is the main file it containts code to handle Create Ticket,Get Ticket Use Cases and bot builder connection.
 //"Master Branch Chnages"
 const Request = require('request');
-var teams = require("botbuilder-teams");
+
 var getsession='';
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -84,7 +84,7 @@ bot.recognizer(recognizer);
 //Greeting Dialog to greet the user
 bot.dialog('Greeting',[
     function (session, args, next) {    
-    var teamId = session.message.sourceEvent.team.id;
+  
       session.send("teamsid",teamId);
     var jsonData = JSON.stringify(session.message);
       var jsonParse = JSON.parse(jsonData);
